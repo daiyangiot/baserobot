@@ -1,0 +1,281 @@
+/* Daiyang IoT Obstacle Avoidance Robot 2015
+  * By Sonia Lee <daiyangelectrical.com.au> <openmylab.com>
+  * This sketch contains automatic movements for 2-wheels, 4x AA battery powered obstacle avoidance robot
+    Please use lithium or rechargeable batteries and not alkaline for cost-effective maintenance
+  * Components: Arduino Uno, sensor shield, ultrasonic distance sensor, 2x servos, motor break-out
+    board, 2x motors
+  * Wires also called "dupont" wires. The ends: male has pin end, female has open end (no pin)
+  * For instructions on hardware and wiring, please become a member and "adopt a robot" :)
+    Members have access to free workshops, technical support, monthly experiments
+  */
+ 
+ #include <Servo.h>
+
+Servo myservo;             // Rotating servo "myservo" - may want to add additional servos later. Tag Servo myservo2; etc.
+
+/* Ultrasonic distance detector (blue eyes)
+  * Is a sensor module: range distance 2-500cm, power: 5Volts
+  * Read labels on sensor module (eyes): Vcc, Trig, Echo, Gnd
+  * Numbers correspond to pin number on shield (the thing on top of Arduino)
+  * Match pins on "eyes" and plug into pins on shield using wires (female to female)
+  */
+
+ int Trig = 2;               // Plug into 2S (not 2G or 2V); Trigger pin - sends pulses out to detect objects
+ int Echo = 3;               // Plug into 3S (S is sensor pin); Echo pin - detects echos from pulses bouncing back from objects
+ 
+ /* Plug into 3G (G is ground pin) to GND on eyes; Ground pin - neutralizes power so your eyes don't overheat
+  * Plug into 3V (V is power pin) to VCC on eyes; Voltage pin - uses 5V of power
+  */
+
+  // Tags for pulse (from ultrasonic sensor) and distance detection
+
+ int PDetect;              // Pulse detection
+ int DDetect;              // Distance detection
+
+ /* Motor break-out board (red square next to wheels)
+  * Read labels next to pins: EnA, In1, In2, In3, In4, EnB
+  * EnA and EnB give power to each motor. Ensure two wires are plugged in to any 
+  * Match pin on breakout board and plug into pins on sensor shield using wires (female to female)
+  */
+
+ /* Motor on right side (yellow oblong next to wheel)
+  * EnA and EnB give power to each motor. Ensure two wires for each En (4 in total) on motor
+    break-out board are plugged into any V outlets on sensor shield
+  * G is ground (neutral power); S is sensor (action) on sensor shield. For example:
+    EnA = 11; Plug into 11V (not 11G or 11S); engine power on right side
+    EnB = 12; Plug into 12V (not 12G or 12S); engine power on left side
+  */
+ int in1 = 9;               // Plug into 9S; assigns a function for right wheel with pin 9 later
+ int in3 = 10;              // Plug into 10S; assigns a function for right wheel with pin 10 later
+ 
+ /* Motor on left side (yellow oblong opposite the other yellow oblong)
+  * EnB = 8V; Plug into 8V (not 8G or 8S); engine power on left side
+  */
+  
+int in2 = 11;              // Plug into 11S; assigns a function for left wheel with pin 11 later
+int in4 = 6;               // Plug into 6S; assigns a function for left wheel with pin 6 later
+
+ // Tag positions
+  
+ int frontmeasure = 0;     // In front
+ int RHS = 0;              // Right side
+ int LHS = 0;              // Left side
+
+ // Tag variables for direction
+ 
+ int Zgo = 0;              // Zero position
+ int Fgo = 8;              // Go forward
+ int Rgo = 6;              // Go right 
+ int Lgo = 4;              // Go left 
+ int Bgo = 2;              // Reverse
+
+  /* Tag servo clog (rotating part) positions (normally between 0 to 180 degrees)
+   * Ensure servo is positioned front center (ultrasonic sensor: eyes facing front)
+     for accurate obstacle detection, and nothing blocking 0-180 degrees rotation
+   */
+
+  int SerLHS = 0;          // Servo position when rotating left
+  int SerMID = 100;        // Servo position in center
+  int SerRHS = 180;        // Servo position when rotating right
+  int SerWait = 200;       // Wait time 200ms after each rotation
+
+ // Execute movement, detection, response. Also referred to as "serial"
+
+ void setup ()
+   { 
+   // Enable serial interface 
+   
+     Serial.begin (9600);
+   
+   // Initialize the following pins for motor control (referred to as "PWM")
+     pinMode (in1, OUTPUT);   
+     pinMode (in2, OUTPUT);   
+     pinMode (in3, OUTPUT);   
+     pinMode (in4, OUTPUT); 
+
+   // Initialize ultrasonic (eyes) detection
+     pinMode (Trig, OUTPUT);       // Pulse send out
+     pinMode (Echo, INPUT);        // Detect echo
+
+   // Initialize servo
+   myservo.attach (5);             // Ensure three wires (female ends) plugged into 5G, 5V, GS on sensor shield
+   
+   } 
+   
+   // Initialize movement. HIGH rotates clockwise (robot forwards); LOW rotates anticlockwise (robot reverses)
+ void MoveForward (int a)           // Move forward
+     { 
+      digitalWrite (in1, LOW);      // Right wheel
+      digitalWrite (in2, HIGH);     // Left wheel
+      digitalWrite (in3, HIGH);     // Right wheel
+      digitalWrite (in4, LOW);      // Left wheel
+      delay (a * 100);
+     } 
+     
+ void right (int b)                 // Moving wheels in opposite direction spins the robot. In this case spin right
+     { 
+      digitalWrite (in1, LOW);
+      digitalWrite (in2, HIGH);  
+      digitalWrite (in3, HIGH); 
+      digitalWrite (in4, HIGH); 
+      delay (b * 100); 
+      } 
+ void left (int c)                  // Spin left
+     { 
+      digitalWrite (in1, HIGH); 
+      digitalWrite (in2, HIGH); 
+      digitalWrite (in3, HIGH); 
+      digitalWrite (in4, LOW);  
+      delay (c * 100); 
+     } 
+ void turnR (int d)                 // Turn right
+     { 
+      digitalWrite (in1, LOW);  
+      digitalWrite (in2, LOW);  
+      digitalWrite (in3, HIGH); 
+      digitalWrite (in4, HIGH);   
+      delay (d * 100); 
+     } 
+ void turnL (int e)                 // Turn left
+     { 
+      digitalWrite (in1, HIGH); 
+      digitalWrite (in2, HIGH); 
+      digitalWrite (in3, LOW); 
+      digitalWrite (in4, LOW);  
+      delay (e * 100); 
+     }     
+ void halt (int f)                  // Stop 
+     { 
+      digitalWrite (in1, HIGH); 
+      digitalWrite (in2, HIGH); 
+      digitalWrite (in3, HIGH); 
+      digitalWrite (in4, HIGH); 
+      delay (f * 100); 
+     } 
+ void rev (int g)                   // Reverse
+     { 
+      digitalWrite (in1, HIGH);    
+      digitalWrite (in2, LOW); 
+      digitalWrite (in3, LOW); 
+      digitalWrite (in4, HIGH);    
+      delay (g * 100);      
+     } 
+     void detection ()             
+     {       
+       frontdist ();              
+      
+      if (frontmeasure <100)          
+     { 
+       halt (1);            
+       rev (10);                    // Specify reverse distance. Higher number = more distance     
+     } 
+           
+      if (frontmeasure <250)        
+     { 
+       halt (1);               
+       disleft ();           
+       delay (SerWait);       
+       disright ();              
+       delay (SerWait);      
+        
+      if (LHS > RHS)     
+       { 
+       Zgo = Lgo;        
+       } 
+        
+      if (LHS <= RHS)    
+       { 
+       Zgo = Rgo;        
+       } 
+        
+      if (LHS <100 && RHS <100)    
+       { 
+       Zgo = Bgo;             
+       }   
+       } 
+      else                         
+       { 
+       Zgo = Fgo;             
+       }
+     }
+     
+  int Puldis() {
+   
+    digitalWrite(Trig, LOW);
+    delayMicroseconds(2);
+    digitalWrite(Trig, HIGH);
+    delayMicroseconds(5);
+    digitalWrite(Trig, LOW);
+
+ /* Echo detection behavior
+   * 6.0 x 1.5 µs per meter of waves required to trigger echo
+   * Pulse detection is 6.0 x 1.5 µs per millimeter
+   * 6.0 can be altered for more or less detection
+   */
+   
+    int PDetect = pulseIn(Echo, HIGH);
+    int DDetect = (double) PDetect / (6.0 * 1.5);
+    delay(100);
+    return DDetect;
+
+  }
+     
+   void frontdist () {    
+   
+        myservo.write (SerMID);   
+        frontmeasure = Puldis();      
+        delay(SerWait);      
+        Serial.print("Distance front: ");
+        Serial.print(frontmeasure);
+        Serial.print(" mm");
+   }
+     
+   void disleft () {   
+
+        myservo.write (SerLHS);  
+        LHS = Puldis();     
+        delay(SerWait);      
+        Serial.print("Distance left: ");
+        Serial.print(LHS);
+        Serial.print(" mm");
+   }
+     
+   void disright () {   
+
+        myservo.write (SerRHS);  
+        RHS = Puldis();     
+        delay(SerWait);      
+        Serial.print("Distance right: ");
+        Serial.print(RHS);
+        Serial.print(" mm");
+   }      
+   void loop () {
+
+        myservo.write (SerMID);    
+      
+     detection ();         
+      
+    if (Zgo == 2)                 
+    { 
+      rev (8);                   
+      turnL (2);                 
+      Serial.println ("Reverse");
+    } 
+    if (Zgo == 6)              
+    { 
+      rev (1); 
+      turnR (6);            
+      Serial.println ("Turn right");
+    } 
+    if (Zgo == 4)            
+    {   
+      rev (1);       
+      turnL (6);            
+      Serial.println ("Turn left"); 
+    }   
+    if (Zgo == 8)                
+    { 
+     MoveForward (1);            
+     Serial.println ("Go forward");  
+    }    
+   }
