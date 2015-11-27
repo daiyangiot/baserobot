@@ -167,7 +167,7 @@ int in4 = 6;               // Plug into 6S; assigns a function for left wheel wi
       if (frontmeasure <100)          
      { 
        halt (1);            
-       rev (10);                    // Specify reverse distance. Higher number = more distance     
+       rev (8);                    // Specify reverse distance. Higher number = more distance     
      } 
            
       if (frontmeasure <250)        
